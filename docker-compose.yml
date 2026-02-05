@@ -1,0 +1,62 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://authforge:authforge@postgres:5432/authforge
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_EXPIRY=15m
+      - JWT_REFRESH_EXPIRY=7d
+      - PORT=3000
+    volumes:
+      - ./keys:/app/keys:ro
+    networks:
+      - authforge-network
+
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=authforge
+      - POSTGRES_PASSWORD=authforge
+      - POSTGRES_DB=authforge
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authforge -d authforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - authforge-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+    networks:
+      - authforge-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  authforge-network:
+    driver: bridge
