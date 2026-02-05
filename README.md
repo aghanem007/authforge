@@ -34,7 +34,7 @@ A production-grade authentication and security service built with Node.js, TypeS
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/authforge.git
+git clone https://github.com/aghanem007/authforge.git
 cd authforge
 ```
 
