@@ -180,7 +180,3 @@ This project is under active development. Core authentication features are funct
 - [ ] Expanded test coverage (sessions, admin, audit)
 - [ ] Password reset email delivery
 - [ ] Account recovery options
-
-## License
-
-MIT
