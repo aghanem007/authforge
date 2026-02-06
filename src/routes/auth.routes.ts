@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as authService from '../services/auth.service.js';
+import * as emailService from '../services/email.service.js';
 import { authenticate, extractClientInfo } from '../middleware/auth.middleware.js';
 import { loginRateLimiter, authRateLimiter, passwordResetRateLimiter } from '../middleware/rateLimit.middleware.js';
 import {
@@ -214,9 +215,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       );
 
       // Always return success to prevent email enumeration
-      // In production, you'd send an email with the token
       if (token) {
-        console.log(`Password reset token for ${data.email}: ${token}`);
+        await emailService.sendPasswordResetEmail(data.email, token);
       }
 
       reply.send({
