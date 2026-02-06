@@ -7,6 +7,7 @@ import * as tokenService from './token.service.js';
 import * as sessionService from './session.service.js';
 import * as mfaService from './mfa.service.js';
 import * as auditService from './audit.service.js';
+import * as emailService from './email.service.js';
 import { AuditAction, ErrorCode, type TokenPair, type AuthUser } from '../types/index.js';
 import type { User } from '@prisma/client';
 
@@ -16,6 +17,7 @@ export interface RegisterResult {
   user: {
     id: string;
     email: string;
+    emailVerified: boolean;
   };
   tokens: TokenPair;
 }
@@ -105,10 +107,18 @@ export async function register(
     userAgent,
   });
 
+  // Send verification email (non-blocking — SMTP failures don't break registration)
+  try {
+    await createEmailVerification(user.id, user.email);
+  } catch (err) {
+    console.error('Failed to send verification email during registration:', err);
+  }
+
   return {
     user: {
       id: user.id,
       email: user.email,
+      emailVerified: false,
     },
     tokens: {
       accessToken: tokenResult.accessToken,
@@ -544,6 +554,95 @@ export async function resetPassword(
     ipAddress,
     userAgent,
   });
+}
+
+export async function createEmailVerification(
+  userId: string,
+  email: string
+): Promise<void> {
+  // Invalidate any existing verification tokens for this user
+  await prisma.emailVerificationToken.updateMany({
+    where: {
+      userId,
+      usedAt: null,
+    },
+    data: {
+      usedAt: new Date(), // mark old tokens as used
+    },
+  });
+
+  const token = generateSecureToken(32);
+  const tokenHash = hashToken(token);
+
+  await prisma.emailVerificationToken.create({
+    data: {
+      userId,
+      token: tokenHash,
+      expiresAt: new Date(Date.now() + RedisTTL.emailVerification * 1000),
+    },
+  });
+
+  await emailService.sendVerificationEmail(email, token);
+
+  await auditService.logAuthEvent(AuditAction.EMAIL_VERIFICATION_SENT, {
+    userId,
+    email,
+    ipAddress: 'system',
+    userAgent: 'system',
+  });
+}
+
+export async function verifyEmail(
+  token: string,
+  ipAddress: string,
+  userAgent: string
+): Promise<void> {
+  const tokenHash = hashToken(token);
+
+  const verificationToken = await prisma.emailVerificationToken.findUnique({
+    where: { token: tokenHash },
+  });
+
+  if (!verificationToken || verificationToken.expiresAt < new Date() || verificationToken.usedAt) {
+    throw Object.assign(new Error('Invalid or expired verification token'), {
+      code: ErrorCode.TOKEN_INVALID,
+    });
+  }
+
+  // Mark token as used and verify user in a transaction
+  await prisma.$transaction([
+    prisma.emailVerificationToken.update({
+      where: { id: verificationToken.id },
+      data: { usedAt: new Date() },
+    }),
+    prisma.user.update({
+      where: { id: verificationToken.userId },
+      data: { emailVerified: true },
+    }),
+  ]);
+
+  await auditService.logAuthEvent(AuditAction.EMAIL_VERIFICATION, {
+    userId: verificationToken.userId,
+    ipAddress,
+    userAgent,
+  });
+}
+
+export async function resendVerificationEmail(
+  email: string,
+  ipAddress: string,
+  userAgent: string
+): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+
+  // Don't reveal whether the email exists
+  if (!user || user.emailVerified) {
+    return;
+  }
+
+  await createEmailVerification(user.id, user.email);
 }
 
 export async function getUserRolesAndPermissions(userId: string): Promise<{
