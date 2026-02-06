@@ -87,6 +87,13 @@ export const passwordResetRateLimiter = createRateLimiter({
   keyPrefix: 'ratelimit:pwreset',
 });
 
+// Rate limiter for email verification (prevent abuse)
+export const emailVerificationRateLimiter = createRateLimiter({
+  max: 3,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  keyPrefix: 'ratelimit:emailverify',
+});
+
 // Rate limiter per user for sensitive operations
 export function userRateLimiter(max: number, windowMs: number) {
   return createRateLimiter({
