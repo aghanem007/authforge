@@ -76,6 +76,14 @@ export const roleCreateSchema = z.object({
   permissions: z.array(z.string().cuid()).optional(),
 });
 
+export const emailVerificationSchema = z.object({
+  token: z.string().min(1, 'Verification token is required'),
+});
+
+export const resendVerificationSchema = z.object({
+  email: emailSchema,
+});
+
 export const auditLogQuerySchema = z.object({
   userId: z.string().cuid().optional(),
   action: z.string().optional(),
@@ -93,4 +101,6 @@ export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchem
 export type PasswordResetInput = z.infer<typeof passwordResetSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
+export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 export type AuditLogQueryInput = z.infer<typeof auditLogQuerySchema>;
