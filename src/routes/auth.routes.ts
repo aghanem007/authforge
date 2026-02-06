@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as authService from '../services/auth.service.js';
 import * as emailService from '../services/email.service.js';
 import { authenticate, extractClientInfo } from '../middleware/auth.middleware.js';
-import { loginRateLimiter, authRateLimiter, passwordResetRateLimiter } from '../middleware/rateLimit.middleware.js';
+import { loginRateLimiter, authRateLimiter, passwordResetRateLimiter, emailVerificationRateLimiter } from '../middleware/rateLimit.middleware.js';
 import {
   registerSchema,
   loginSchema,
@@ -11,8 +11,10 @@ import {
   passwordResetRequestSchema,
   passwordResetSchema,
   mfaVerifySchema,
+  emailVerificationSchema,
+  resendVerificationSchema,
 } from '../utils/validators.js';
-import type { RegisterInput, LoginInput, RefreshTokenInput, ChangePasswordInput, PasswordResetRequestInput, PasswordResetInput, MfaVerifyInput } from '../utils/validators.js';
+import type { RegisterInput, LoginInput, RefreshTokenInput, ChangePasswordInput, PasswordResetRequestInput, PasswordResetInput, MfaVerifyInput, EmailVerificationInput, ResendVerificationInput } from '../utils/validators.js';
 
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   // Register
@@ -248,6 +250,45 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       reply.send({
         success: true,
         data: { message: 'Password reset successfully' },
+      });
+    }
+  );
+
+  // Verify email
+  fastify.post<{ Body: EmailVerificationInput }>(
+    '/verify-email',
+    {
+      preHandler: [authRateLimiter],
+    },
+    async (request, reply) => {
+      const data = emailVerificationSchema.parse(request.body);
+      const { ipAddress, userAgent } = extractClientInfo(request);
+
+      await authService.verifyEmail(data.token, ipAddress, userAgent);
+
+      reply.send({
+        success: true,
+        data: { message: 'Email verified successfully' },
+      });
+    }
+  );
+
+  // Resend verification email
+  fastify.post<{ Body: ResendVerificationInput }>(
+    '/resend-verification',
+    {
+      preHandler: [emailVerificationRateLimiter],
+    },
+    async (request, reply) => {
+      const data = resendVerificationSchema.parse(request.body);
+      const { ipAddress, userAgent } = extractClientInfo(request);
+
+      await authService.resendVerificationEmail(data.email, ipAddress, userAgent);
+
+      // Always return success to prevent email enumeration
+      reply.send({
+        success: true,
+        data: { message: 'If an account exists with that email, a verification link has been sent' },
       });
     }
   );
