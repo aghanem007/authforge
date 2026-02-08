@@ -84,6 +84,16 @@ export const resendVerificationSchema = z.object({
   email: emailSchema,
 });
 
+export const createApiKeySchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100, 'Name must not exceed 100 characters'),
+  permissions: z.array(z.string()).default([]),
+  expiresInDays: z.number().int().min(1).max(365).optional(),
+});
+
+export const apiKeyIdParamSchema = z.object({
+  id: z.string().cuid('Invalid API key ID'),
+});
+
 export const auditLogQuerySchema = z.object({
   userId: z.string().cuid().optional(),
   action: z.string().optional(),
@@ -103,4 +113,5 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
 export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;
 export type AuditLogQueryInput = z.infer<typeof auditLogQuerySchema>;
