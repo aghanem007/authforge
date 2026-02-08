@@ -15,6 +15,7 @@ import { mfaRoutes } from './routes/mfa.routes.js';
 import { sessionRoutes } from './routes/session.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { auditRoutes } from './routes/audit.routes.js';
+import { apiKeyRoutes } from './routes/apikey.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -110,6 +111,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(sessionRoutes, { prefix: '/sessions' });
   await app.register(adminRoutes, { prefix: '/admin' });
   await app.register(auditRoutes, { prefix: '/audit' });
+  await app.register(apiKeyRoutes, { prefix: '/api-keys' });
 
   // Error handling
   app.setErrorHandler(errorHandler);
