@@ -101,6 +101,15 @@ The API will be available at `http://localhost:3000`. API documentation is at `h
 | GET | `/sessions/devices` | List known devices |
 | POST | `/sessions/devices/:id/trust` | Trust a device |
 
+### API Keys
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api-keys` | Create a new API key |
+| GET | `/api-keys` | List your API keys |
+| GET | `/api-keys/:id` | Get API key details |
+| POST | `/api-keys/:id/revoke` | Revoke an API key |
+| DELETE | `/api-keys/:id` | Delete an API key |
+
 ### Admin
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -166,17 +175,16 @@ This project is under active development. Core authentication features are funct
 ### What's Working
 - User registration, login, logout
 - JWT token refresh flow
-- Password reset (token generation)
+- Password reset (token generation + email delivery)
+- Email verification flow
 - MFA setup and verification
 - Session management
 - Role-based access control
+- API key management (create, list, revoke, delete)
 - Audit logging
 - Rate limiting
 
 ### Roadmap
-- [ ] Email service integration (SMTP for verification/reset emails)
-- [ ] Email verification flow
-- [ ] API key management endpoints
-- [ ] Expanded test coverage (sessions, admin, audit)
-- [ ] Password reset email delivery
+- [ ] API key rotation and key-based authentication
+- [ ] Expanded test coverage (sessions, admin, audit, API keys)
 - [ ] Account recovery options
