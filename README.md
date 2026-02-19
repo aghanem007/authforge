@@ -8,6 +8,8 @@ A production-grade authentication and security service built with Node.js, TypeS
 - **Multi-Factor Authentication** - TOTP-based 2FA with backup codes
 - **Session Management** - Track and manage user sessions across devices
 - **Role-Based Access Control** - Granular permissions system
+- **API Key Management** - Create, revoke, and manage API keys
+- **Email Verification** - SMTP-based email verification and password reset
 - **Security Hardening** - Rate limiting, brute force protection, account lockout
 - **Audit Logging** - Comprehensive logging of all security events
 - **Device Management** - Trust and manage known devices
@@ -77,11 +79,15 @@ The API will be available at `http://localhost:3000`. API documentation is at `h
 |--------|----------|-------------|
 | POST | `/auth/register` | Create a new account |
 | POST | `/auth/login` | Login and get tokens |
+| POST | `/auth/login/mfa` | Complete MFA challenge |
 | POST | `/auth/refresh` | Refresh access token |
 | POST | `/auth/logout` | Logout current session |
 | POST | `/auth/logout-all` | Logout all sessions |
+| POST | `/auth/change-password` | Change password |
 | POST | `/auth/forgot-password` | Request password reset |
 | POST | `/auth/reset-password` | Reset password |
+| POST | `/auth/verify-email` | Verify email address |
+| POST | `/auth/resend-verification` | Resend verification email |
 | GET | `/auth/me` | Get current user |
 
 ### MFA
@@ -100,6 +106,8 @@ The API will be available at `http://localhost:3000`. API documentation is at `h
 | DELETE | `/sessions/:id` | Revoke a session |
 | GET | `/sessions/devices` | List known devices |
 | POST | `/sessions/devices/:id/trust` | Trust a device |
+| POST | `/sessions/devices/:id/untrust` | Untrust a device |
+| DELETE | `/sessions/devices/:id` | Remove a device |
 
 ### API Keys
 | Method | Endpoint | Description |
@@ -118,7 +126,20 @@ The API will be available at `http://localhost:3000`. API documentation is at `h
 | PATCH | `/admin/users/:id` | Update user |
 | DELETE | `/admin/users/:id` | Delete user |
 | POST | `/admin/users/:id/roles` | Assign role |
+| DELETE | `/admin/users/:id/roles/:roleId` | Remove role |
+| GET | `/admin/roles` | List roles |
+| POST | `/admin/roles` | Create role |
+| DELETE | `/admin/roles/:id` | Delete role |
+| GET | `/admin/permissions` | List permissions |
+| POST | `/admin/permissions` | Create permission |
 | GET | `/admin/audit/logs` | Query audit logs |
+| GET | `/admin/audit/export` | Export audit logs |
+
+### Audit (User)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/audit/my-activity` | View your activity logs |
+| GET | `/audit/security-alerts` | View security alerts |
 
 ## Development
 
@@ -158,6 +179,11 @@ docker-compose up --build
 | `JWT_REFRESH_EXPIRY` | Refresh token expiry | 7d |
 | `MAX_LOGIN_ATTEMPTS` | Failed attempts before lockout | 5 |
 | `LOCKOUT_DURATION_MINUTES` | Account lockout duration | 15 |
+| `SMTP_HOST` | SMTP server host | - |
+| `SMTP_PORT` | SMTP server port | 587 |
+| `SMTP_USER` | SMTP username | - |
+| `SMTP_PASS` | SMTP password | - |
+| `EMAIL_FROM` | Sender email address | - |
 
 ## Security
 
@@ -170,21 +196,17 @@ docker-compose up --build
 
 ## Status
 
-This project is under active development. Core authentication features are functional.
+All core features are implemented and working.
 
-### What's Working
 - User registration, login, logout
-- JWT token refresh flow
-- Password reset (token generation + email delivery)
+- JWT token refresh with rotation
+- Password change and reset (with SMTP email delivery)
 - Email verification flow
-- MFA setup and verification
-- Session management
-- Role-based access control
+- MFA setup, verification, and backup codes
+- Session management across devices
+- Device trust management
+- Role-based access control with granular permissions
 - API key management (create, list, revoke, delete)
-- Audit logging
-- Rate limiting
-
-### Roadmap
-- [ ] API key rotation and key-based authentication
-- [ ] Expanded test coverage (sessions, admin, audit, API keys)
-- [ ] Account recovery options
+- Comprehensive audit logging and security alerts
+- Rate limiting and brute force protection
+- Test coverage across auth, MFA, sessions, API keys, and audit routes
