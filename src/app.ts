@@ -15,20 +15,25 @@ import { mfaRoutes } from './routes/mfa.routes.js';
 import { sessionRoutes } from './routes/session.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { auditRoutes } from './routes/audit.routes.js';
+import { apiKeyRoutes } from './routes/apikey.routes.js';
 
-export async function buildApp(): Promise<FastifyInstance> {
+export async function buildApp() {
+  const loggerConfig = config.env === 'development'
+    ? {
+        level: 'info' as const,
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+          },
+        },
+      }
+    : {
+        level: 'warn' as const,
+      };
+
   const app = Fastify({
-    logger: {
-      level: config.env === 'development' ? 'info' : 'warn',
-      transport: config.env === 'development'
-        ? {
-            target: 'pino-pretty',
-            options: {
-              colorize: true,
-            },
-          }
-        : undefined,
-    },
+    logger: loggerConfig,
     trustProxy: true,
   });
 
@@ -110,10 +115,15 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(sessionRoutes, { prefix: '/sessions' });
   await app.register(adminRoutes, { prefix: '/admin' });
   await app.register(auditRoutes, { prefix: '/audit' });
+  await app.register(apiKeyRoutes, { prefix: '/api-keys' });
 
   // Error handling
-  app.setErrorHandler(errorHandler);
-  app.setNotFoundHandler(notFoundHandler);
+  app.setErrorHandler((error, request, reply) => {
+    errorHandler(error, request, reply);
+  });
+  app.setNotFoundHandler((request, reply) => {
+    notFoundHandler(request, reply);
+  });
 
   return app;
 }

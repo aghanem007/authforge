@@ -478,7 +478,7 @@ export async function requestPasswordReset(
   // Always log the attempt, even if user doesn't exist (for security)
   await auditService.logAuthEvent(AuditAction.PASSWORD_RESET_REQUEST, {
     email,
-    userId: user?.id,
+    ...(user ? { userId: user.id } : {}),
     ipAddress,
     userAgent,
   });
@@ -705,7 +705,7 @@ async function recordFailedLogin(
   // Log the failed attempt
   await auditService.logAuthEvent(AuditAction.LOGIN_FAILURE, {
     email,
-    userId,
+    ...(userId ? { userId } : {}),
     ipAddress,
     userAgent,
   });
