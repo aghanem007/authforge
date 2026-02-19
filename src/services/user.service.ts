@@ -230,12 +230,14 @@ export async function createRole(
   return prisma.role.create({
     data: {
       name,
-      description,
-      permissions: permissionIds
+      description: description ?? null,
+      ...(permissionIds
         ? {
-            connect: permissionIds.map((id) => ({ id })),
+            permissions: {
+              connect: permissionIds.map((id) => ({ id })),
+            },
           }
-        : undefined,
+        : {}),
     },
     include: {
       permissions: true,
@@ -257,6 +259,6 @@ export async function getPermissions() {
 
 export async function createPermission(name: string, description?: string) {
   return prisma.permission.create({
-    data: { name, description },
+    data: { name, description: description ?? null },
   });
 }

@@ -22,7 +22,7 @@ export async function createSession(
     data: {
       userId,
       refreshToken: refreshTokenHash,
-      deviceId,
+      deviceId: deviceId ?? null,
       ipAddress,
       userAgent,
       expiresAt,

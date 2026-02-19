@@ -1,15 +1,15 @@
 import { getPrismaClient } from '../config/database.js';
 import type { AuditAction, AuditLogEntry, PaginatedResponse } from '../types/index.js';
-import type { AuditLog } from '@prisma/client';
+import type { AuditLog, Prisma } from '@prisma/client';
 
 const prisma = getPrismaClient();
 
 export async function createAuditLog(entry: AuditLogEntry): Promise<AuditLog> {
   return prisma.auditLog.create({
     data: {
-      userId: entry.userId,
+      ...(entry.userId ? { userId: entry.userId } : {}),
       action: entry.action,
-      details: entry.details,
+      details: entry.details as unknown as Prisma.InputJsonValue,
       ipAddress: entry.ipAddress,
       userAgent: entry.userAgent,
     },
@@ -45,7 +45,7 @@ export async function logAuthEvent(
 
   await createAuditLog({
     action,
-    userId: options.userId,
+    ...(options.userId ? { userId: options.userId } : {}),
     details,
     ipAddress: options.ipAddress,
     userAgent: options.userAgent,
@@ -53,10 +53,10 @@ export async function logAuthEvent(
 }
 
 export async function getAuditLogs(options: {
-  userId?: string;
-  action?: string;
-  startDate?: Date;
-  endDate?: Date;
+  userId?: string | undefined;
+  action?: string | undefined;
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
   page: number;
   limit: number;
 }): Promise<PaginatedResponse<AuditLog>> {
@@ -113,10 +113,10 @@ export async function getUserActivityLogs(
 }
 
 export async function exportAuditLogs(options: {
-  userId?: string;
-  action?: string;
-  startDate?: Date;
-  endDate?: Date;
+  userId?: string | undefined;
+  action?: string | undefined;
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
 }): Promise<AuditLog[]> {
   const where: Record<string, unknown> = {};
 
