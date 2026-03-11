@@ -8,6 +8,7 @@ import swaggerUi from '@fastify/swagger-ui';
 
 import { config } from './config/index.js';
 import { getRedisClient } from './config/redis.js';
+import { getPrismaClient } from './config/database.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
 import { authRoutes } from './routes/auth.routes.js';
@@ -102,10 +103,33 @@ export async function buildApp() {
 
   // Health check
   app.get('/health', async () => {
+    let dbStatus = 'ok';
+    let redisStatus = 'ok';
+
+    try {
+      const prisma = getPrismaClient();
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
+      dbStatus = 'error';
+    }
+
+    try {
+      const r = getRedisClient();
+      await r.ping();
+    } catch {
+      redisStatus = 'error';
+    }
+
+    const healthy = dbStatus === 'ok' && redisStatus === 'ok';
+
     return {
-      status: 'healthy',
+      status: healthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
+      services: {
+        database: dbStatus,
+        redis: redisStatus,
+      },
     };
   });
 
