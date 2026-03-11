@@ -61,4 +61,12 @@ export function validateConfig(): void {
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
+
+  // If any SMTP variable is set, require all of them
+  const smtpVars = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+  const smtpSet = smtpVars.filter(key => process.env[key]);
+  if (smtpSet.length > 0 && smtpSet.length < smtpVars.length) {
+    const smtpMissing = smtpVars.filter(key => !process.env[key]);
+    throw new Error(`Partial SMTP configuration detected. Missing: ${smtpMissing.join(', ')}`);
+  }
 }
