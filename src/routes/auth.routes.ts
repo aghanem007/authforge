@@ -109,6 +109,9 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   // Refresh tokens
   fastify.post<{ Body: RefreshTokenInput }>(
     '/refresh',
+    {
+      preHandler: [authRateLimiter],
+    },
     async (request, reply) => {
       const data = refreshTokenSchema.parse(request.body);
       const { ipAddress, userAgent } = extractClientInfo(request);

@@ -12,7 +12,7 @@ export async function mfaRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.addHook('preHandler', authenticate);
 
   // Setup MFA (get QR code and secret)
-  fastify.post('/setup', async (request, reply) => {
+  fastify.post('/setup', { preHandler: [authRateLimiter] }, async (request, reply) => {
     const result = await mfaService.setupMfa(request.user!.id);
 
     reply.send({
