@@ -26,6 +26,7 @@ export function requireRoles(...requiredRoles: string[]) {
           message: 'Insufficient permissions',
         },
       });
+      return;
     }
   };
 }
@@ -55,6 +56,7 @@ export function requirePermissions(...requiredPermissions: string[]) {
           message: 'Insufficient permissions',
         },
       });
+      return;
     }
   };
 }
@@ -84,6 +86,7 @@ export function requireAnyPermission(...permissions: string[]) {
           message: 'Insufficient permissions',
         },
       });
+      return;
     }
   };
 }
@@ -124,6 +127,7 @@ export function requireOwnerOrAdmin(userIdParam: string = 'id') {
           message: 'Access denied',
         },
       });
+      return;
     }
   };
 }
