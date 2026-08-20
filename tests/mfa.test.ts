@@ -78,12 +78,21 @@ describe('MFA Routes', () => {
     });
 
     it('should reject invalid code', async () => {
-      // Setup MFA
+      // Use a fresh user: the shared user already has MFA enabled by the
+      // previous test, which would make setup unavailable here.
+      const reg = await app.inject({
+        method: 'POST',
+        url: '/auth/register',
+        payload: { email: 'mfa-invalid@example.com', password: 'SecureP@ss123!' },
+      });
+      const token = JSON.parse(reg.body).data.tokens.accessToken;
+
+      // Setup MFA (but don't enable it)
       await app.inject({
         method: 'POST',
         url: '/mfa/setup',
         headers: {
-          authorization: `Bearer ${accessToken}`,
+          authorization: `Bearer ${token}`,
         },
       });
 
@@ -92,7 +101,7 @@ describe('MFA Routes', () => {
         method: 'POST',
         url: '/mfa/verify',
         headers: {
-          authorization: `Bearer ${accessToken}`,
+          authorization: `Bearer ${token}`,
         },
         payload: {
           code: '000000',
