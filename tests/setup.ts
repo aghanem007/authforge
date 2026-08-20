@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, beforeEach } from 'vitest';
+import { beforeAll, afterAll } from 'vitest';
 import { getPrismaClient, disconnectDatabase } from '../src/config/database.js';
 import { closeRedis, getRedisClient } from '../src/config/redis.js';
 import { loadJwtKeys } from '../src/config/jwt.js';
@@ -12,14 +12,9 @@ beforeAll(async () => {
     throw new Error('Tests must be run against a test database');
   }
 
-  // Mirror the runtime startup steps from src/index.ts so the app under test
-  // has what it needs: JWT signing keys and the default roles/permissions.
-  await loadJwtKeys();
-  await seedDefaultRoles();
-});
-
-beforeEach(async () => {
-  // Clean up database before each test
+  // Reset state once per test file. Each file sets up its own users/sessions
+  // in its own beforeAll and relies on them persisting across that file's
+  // tests, so cleanup belongs here (per file), not in beforeEach.
   const tables = [
     'AuditLog',
     'Device',
@@ -35,9 +30,14 @@ beforeEach(async () => {
     await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE`);
   }
 
-  // Clear Redis
-  const redis = getRedisClient();
-  await redis.flushdb();
+  // Refresh tokens and rate-limit state live in Redis and must also start
+  // clean for each file (but persist within it).
+  await getRedisClient().flushdb();
+
+  // Mirror the runtime startup steps from src/index.ts so the app under test
+  // has what it needs: JWT signing keys and the default roles/permissions.
+  await loadJwtKeys();
+  await seedDefaultRoles();
 });
 
 afterAll(async () => {
