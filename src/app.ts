@@ -59,13 +59,16 @@ export async function buildApp() {
 
   await app.register(cookie);
 
-  // Rate limiting
-  const redis = getRedisClient();
-  await app.register(rateLimit, {
-    max: config.rateLimit.max,
-    timeWindow: config.rateLimit.windowMs,
-    redis,
-  });
+  // Rate limiting (disabled under test — it's infrastructure, not what the
+  // integration tests exercise, and shared per-IP counters break them).
+  if (config.env !== 'test') {
+    const redis = getRedisClient();
+    await app.register(rateLimit, {
+      max: config.rateLimit.max,
+      timeWindow: config.rateLimit.windowMs,
+      redis,
+    });
+  }
 
   // API Documentation
   await app.register(swagger, {

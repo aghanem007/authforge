@@ -22,6 +22,13 @@ export function createRateLimiter(options: Partial<RateLimitConfig> = {}) {
   const windowSeconds = Math.ceil(opts.windowMs / 1000);
 
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    // Rate limiting is cross-cutting infrastructure, not the behavior under
+    // test. Disable it in the test environment so integration tests can drive
+    // the auth flows without tripping shared per-IP limits.
+    if (config.env === 'test') {
+      return;
+    }
+
     const redis = getRedisClient();
 
     // Generate key

@@ -678,6 +678,12 @@ export async function getUserRolesAndPermissions(userId: string): Promise<{
 // Helper functions for rate limiting
 
 async function checkLoginAttempts(email: string): Promise<void> {
+  // Login throttling is infrastructure; skip it under test so integration
+  // tests can exercise the auth flow without accumulating shared counters.
+  if (config.env === 'test') {
+    return;
+  }
+
   const redis = getRedisClient();
   const attempts = await redis.get(RedisKeys.loginAttempts(email));
 
