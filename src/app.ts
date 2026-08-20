@@ -136,6 +136,17 @@ export async function buildApp() {
     };
   });
 
+  // Error handling — must be registered BEFORE the route plugins so the
+  // encapsulated route contexts inherit it. Registered afterwards, thrown
+  // errors fall through to Fastify's default handler and every error response
+  // becomes a 500 instead of its intended status code.
+  app.setErrorHandler((error, request, reply) => {
+    errorHandler(error, request, reply);
+  });
+  app.setNotFoundHandler((request, reply) => {
+    notFoundHandler(request, reply);
+  });
+
   // API routes
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(mfaRoutes, { prefix: '/mfa' });
@@ -143,14 +154,6 @@ export async function buildApp() {
   await app.register(adminRoutes, { prefix: '/admin' });
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(apiKeyRoutes, { prefix: '/api-keys' });
-
-  // Error handling
-  app.setErrorHandler((error, request, reply) => {
-    errorHandler(error, request, reply);
-  });
-  app.setNotFoundHandler((request, reply) => {
-    notFoundHandler(request, reply);
-  });
 
   return app;
 }
