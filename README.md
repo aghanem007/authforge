@@ -1,5 +1,7 @@
 # AuthForge
 
+[![Tests](https://github.com/aghanem007/authforge/actions/workflows/test.yml/badge.svg)](https://github.com/aghanem007/authforge/actions/workflows/test.yml)
+
 A production-grade authentication and security service built with Node.js, TypeScript, and Fastify.
 
 ## Features
