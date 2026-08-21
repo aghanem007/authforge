@@ -2,7 +2,7 @@ import { getPrismaClient } from '../config/database.js';
 import { getRedisClient, RedisKeys, RedisTTL } from '../config/redis.js';
 import { config } from '../config/index.js';
 import { hashPassword, verifyPassword, checkPasswordStrength, validatePasswordRequirements } from '../utils/password.js';
-import { generateSecureToken, hashToken, generateDeviceFingerprint, generateUuid } from '../utils/crypto.js';
+import { generateSecureToken, hashToken, generateDeviceFingerprint } from '../utils/crypto.js';
 import * as tokenService from './token.service.js';
 import * as sessionService from './session.service.js';
 import * as mfaService from './mfa.service.js';
@@ -84,23 +84,21 @@ export async function register(
 
   // Create session and tokens
   const { roles, permissions } = await getUserRolesAndPermissions(user.id);
-  const sessionId = generateUuid();
   const tokenResult = await tokenService.generateTokenPair(
     user.id,
     user.email,
     roles,
     permissions,
-    sessionId
+    'temp'
   );
 
   const session = await sessionService.createSession(
     user.id,
     tokenResult.refreshTokenHash,
     ipAddress,
-    userAgent,
-    undefined,
-    sessionId
+    userAgent
   );
+  await tokenService.bindRefreshTokenToSession(tokenResult.refreshTokenHash, session.id);
 
   // Log the registration
   await auditService.logAuthEvent(AuditAction.REGISTER, {
@@ -220,13 +218,12 @@ export async function login(
 
   // Create session and tokens
   const { roles, permissions } = await getUserRolesAndPermissions(user.id);
-  const sessionId = generateUuid();
   const tokenResult = await tokenService.generateTokenPair(
     user.id,
     user.email,
     roles,
     permissions,
-    sessionId
+    'temp'
   );
 
   const fingerprint = deviceFingerprint || generateDeviceFingerprint(userAgent, ipAddress);
@@ -236,10 +233,9 @@ export async function login(
     user.id,
     tokenResult.refreshTokenHash,
     ipAddress,
-    userAgent,
-    undefined,
-    sessionId
+    userAgent
   );
+  await tokenService.bindRefreshTokenToSession(tokenResult.refreshTokenHash, session.id);
 
   // Log successful login
   await auditService.logAuthEvent(AuditAction.LOGIN_SUCCESS, {
@@ -306,13 +302,12 @@ export async function completeMfaLogin(
 
   // Create session and tokens
   const { roles, permissions } = await getUserRolesAndPermissions(userId);
-  const sessionId = generateUuid();
   const tokenResult = await tokenService.generateTokenPair(
     userId,
     user.email,
     roles,
     permissions,
-    sessionId
+    'temp'
   );
 
   const fingerprint = generateDeviceFingerprint(userAgent, ipAddress);
@@ -322,10 +317,9 @@ export async function completeMfaLogin(
     userId,
     tokenResult.refreshTokenHash,
     ipAddress,
-    userAgent,
-    undefined,
-    sessionId
+    userAgent
   );
+  await tokenService.bindRefreshTokenToSession(tokenResult.refreshTokenHash, session.id);
 
   await auditService.logAuthEvent(AuditAction.LOGIN_SUCCESS, {
     userId,

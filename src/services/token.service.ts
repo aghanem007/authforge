@@ -124,6 +124,33 @@ export async function verifyRefreshToken(token: string): Promise<{ userId: strin
   return parsed;
 }
 
+// The refresh token is generated before the session row exists (to avoid a
+// circular dependency — the session stores the token hash). Once the real
+// session id is known, point the stored token record at it so refresh can
+// find the session.
+export async function bindRefreshTokenToSession(
+  refreshTokenHash: string,
+  sessionId: string
+): Promise<void> {
+  const redis = getRedisClient();
+  const key = RedisKeys.refreshToken(refreshTokenHash);
+  const data = await redis.get(key);
+
+  if (!data) {
+    return;
+  }
+
+  const parsed = JSON.parse(data) as { userId: string; sessionId: string; createdAt: number };
+  parsed.sessionId = sessionId;
+
+  const ttl = await redis.ttl(key);
+  if (ttl > 0) {
+    await redis.setex(key, ttl, JSON.stringify(parsed));
+  } else {
+    await redis.set(key, JSON.stringify(parsed));
+  }
+}
+
 export async function revokeAccessToken(jti: string): Promise<void> {
   const redis = getRedisClient();
   await redis.setex(RedisKeys.blacklistedToken(jti), RedisTTL.blacklistedToken, '1');

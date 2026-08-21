@@ -13,17 +13,13 @@ export async function createSession(
   refreshTokenHash: string,
   ipAddress: string,
   userAgent: string,
-  deviceId?: string,
-  sessionId?: string
+  deviceId?: string
 ): Promise<Session> {
   const expiresInSeconds = parseExpiry(config.jwt.refreshExpiry);
   const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
   return prisma.session.create({
     data: {
-      // Allow callers to pin the id so it matches the sessionId embedded in the
-      // refresh token; refresh looks the session up by that id.
-      ...(sessionId ? { id: sessionId } : {}),
       userId,
       refreshToken: refreshTokenHash,
       deviceId: deviceId ?? null,
